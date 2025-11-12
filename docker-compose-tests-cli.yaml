@@ -1,0 +1,76 @@
+services:
+    mysql:
+        image: mysql:5.7
+        container_name: mysql-container
+        volumes:
+            - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+        ports:
+            - "33060:33060"
+        networks:
+          - app-network
+        environment:
+            MYSQL_ROOT_PASSWORD: password
+            #MYSQL_DATABASE: remote_dump_db
+            #MYSQL_USER: remote_dump_user
+            #MYSQL_PASSWORD: password
+        command: --port=33060
+        healthcheck:
+              test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "remote_dump_user", "-ppassword"]
+              interval: 3s
+              retries: 3
+              start_period: 10s
+    
+    phpunit-56:
+        image: php-with-mysql-56
+        container_name: phpunit-container-56
+        depends_on:
+            mysql:
+                condition: service_healthy
+        volumes:
+          - .:/app
+        working_dir: /app
+        command: php ./vendor/bin/phpunit tests
+        networks:
+          - app-network
+
+    phpunit-74:
+        image: php-with-mysql-74
+        container_name: phpunit-container-74
+        depends_on:
+            phpunit-56:
+                condition: service_completed_successfully
+        volumes:
+          - .:/app
+        working_dir: /app
+        command: php ./vendor/bin/phpunit tests
+        networks:
+          - app-network
+
+    phpunit-84:
+        image: php-with-mysql-84
+        container_name: phpunit-container-84
+        depends_on:
+            phpunit-74:
+                condition: service_completed_successfully
+        volumes:
+          - .:/app
+        working_dir: /app
+        command: php phpunit-bin/phpunit9 tests
+        networks:
+          - app-network
+          
+networks:
+  app-network:
+    driver: bridge
+
+#database:
+#    image: mariadb:10.6-focal
+#    pull_policy: always
+#    restart: always
+#    ports:
+#      - "40001:3306"
+#    environment:
+#      MYSQL_ROOT_PASSWORD: 'password'
+#      MYSQL_DATABASE: 'app'
+#    #volumes:
+#      #- crm-core:/var/lib/mysql

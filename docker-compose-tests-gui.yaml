@@ -1,0 +1,63 @@
+services:
+    mysql:
+        image: mysql:5.7
+        container_name: mysql-container
+        volumes:
+            - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+        ports:
+            - "33060:33060"
+        networks:
+          - app-network
+        environment:
+            MYSQL_ROOT_PASSWORD: password
+            #MYSQL_DATABASE: remote_dump_db
+            #MYSQL_USER: remote_dump_user
+            #MYSQL_PASSWORD: password
+        command: --port=33060
+        healthcheck:
+              test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "remote_dump_user", "-ppassword"]
+              interval: 3s
+              retries: 3
+              start_period: 10s
+    
+    webserver:
+        image: php-with-mysql-84
+        container_name: webserver
+        depends_on:
+            mysql:
+                condition: service_healthy
+        volumes:
+           - ./src:/var/www/html
+        working_dir: /var/www/html
+        command: php -S 0.0.0.0:8000
+        ports:
+              - "8000:8000"
+        networks:
+          - app-network
+
+    selenium:
+        image: selenium/standalone-chrome
+        container_name: selenium_chrome
+        ports:
+          - "4444:4444"
+        networks:
+          - app-network
+        volumes:
+          - ./tests/selenium_downloads:/home/seluser/Downloads
+
+    tester:
+        image: python:3.12
+        container_name: selenium_tester
+        volumes:
+          - ./tests:/tests
+        working_dir: /tests
+        depends_on:
+          - webserver
+          - selenium
+        networks:
+          - app-network
+        command: /bin/sh -c "pip install selenium && python gui-selenium-python-tests.py"
+
+networks:
+  app-network:
+    driver: bridge

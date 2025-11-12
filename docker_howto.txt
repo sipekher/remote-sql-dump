@@ -1,0 +1,38 @@
+# latest composer with PHP 8.4.x (now)
+docker run --rm -v c:\xampp\htdocs\weby\timer:/app composer/composer:latest install
+docker run --rm -v c:\xampp\htdocs\weby\timer:/app composer install
+# last composer with PHP 7.xx
+docker run --rm -v c:\xampp\htdocs\weby\timer:/app composer@sha256:d374b2e1f715621e9d9929575d6b35b11cf4a6dc237d4a08f2e6d1611f534675 install
+docker run --rm -v c:\xampp\htdocs\weby\timer:/app -w /app php:cli php index.php
+# add mysql extension to PHP (uses "Dockerfile" file)
+docker build -t php-with-mysql .
+docker build -t php-with-mysql-56 -f Dockerfile-php56 .
+docker build -t php-with-mysql-74 -f Dockerfile-php74 .
+docker build -t php-with-mysql-84 -f Dockerfile-php84 .
+
+
+# run newly built image
+docker run --rm -v C:\xampp\htdocs\weby\remote.sql.dump:/app -w /app --network=bridge -p 3360:3306  php-with-mysql php ./vendor/bin/phpunit tests
+
+# compose two containers to run together - default MySQL container and "homemade" container "php-with-mysql"
+# created docker-compose.yaml
+
+# run these two containers together = run tests
+# docker-compose up --abort-on-container-exit
+docker-compose up
+docker-compose up --exit-code-from phpunit-74
+
+# run GUI tests
+docker-compose -f docker-compose-tests-gui.yaml up
+# if you also want to rebuild images (e.g., after changes):
+docker-compose -f docker-compose-tests-gui.yaml up --build
+# If you want to bring everything down (stop and remove containers):
+docker-compose -f docker-compose-tests-gui.yaml down
+
+# run CLI tests
+docker-compose -f docker-compose-tests-cli.yaml up
+
+# run CLI and GUI tests together
+docker-compose -f docker-compose-tests-cli.yaml -f docker-compose-tests-gui.yaml up
+docker-compose -f docker-compose-tests-cli.yaml -f docker-compose-tests-gui.yaml up
+

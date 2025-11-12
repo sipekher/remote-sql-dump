@@ -1,0 +1,6 @@
+#FROM php:7.4
+FROM composer@sha256:d374b2e1f715621e9d9929575d6b35b11cf4a6dc237d4a08f2e6d1611f534675
+
+RUN docker-php-ext-install mysqli
+#RUN apt-get -y install php7.4-mysql
+#RUN apt-get -y install php-mysql
